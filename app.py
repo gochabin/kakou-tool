@@ -9,6 +9,20 @@ st.set_page_config(
 st.title("加工条件計算システム")
 
 # ------------------------
+# session保持
+# ------------------------
+
+if "drill_result" not in st.session_state:
+    st.session_state.drill_result = ""
+
+if "drill_detail" not in st.session_state:
+    st.session_state.drill_detail = ""
+
+# ------------------------
+# 定数
+# ------------------------
+
+# ------------------------
 # 定数
 # ------------------------
 
@@ -92,6 +106,10 @@ with tab1:
         ["通し穴", "止まり穴"]
     )
 
+    # ------------------------
+    # 計算ボタン
+    # ------------------------
+
     if st.button("ドリル計算"):
 
         # ------------------------
@@ -120,9 +138,15 @@ with tab1:
             else:
                 vc = 30
 
+        # ------------------------
+        # 回転数
+        # ------------------------
+
         raw = (1000 * vc) / (3.14 * D)
 
-        rpm = round(limitrpm(raw, machine))
+        rpm = round(
+            limitrpm(raw, machine)
+        )
 
         if drill_mode == "止まり穴":
             rpm = round(rpm * 0.9)
@@ -130,7 +154,15 @@ with tab1:
         if holder == "コレット":
             rpm = round(rpm * 0.95)
 
+        # ------------------------
+        # 送り
+        # ------------------------
+
         feed = round(rpm * 0.15)
+
+        # ------------------------
+        # peck
+        # ------------------------
 
         peck = round(
             D * (
@@ -140,19 +172,25 @@ with tab1:
             1
         )
 
-        st.text_area(
-            "結果",
-            value=
+        # ------------------------
+        # 結果保持
+        # ------------------------
+
+        st.session_state.drill_result = (
+
             f"主軸回転数 = {rpm}\n"
             f"送り速度 = {feed}\n"
             f"段切込み量(Q) = {peck}\n"
-            f"穴深さ = {dep}",
-            height=160
+            f"穴深さ = {dep}"
+
         )
 
-        st.text_area(
-            "計算根拠",
-            value=
+        # ------------------------
+        # 根拠保持
+        # ------------------------
+
+        st.session_state.drill_detail = (
+
             f"■ 回転数計算\n"
             f"Vc = {vc}\n"
             f"工具径 = φ{D}\n"
@@ -169,23 +207,48 @@ with tab1:
             f"peck = D × 係数\n"
             f"     = {D} × "
             f"{0.8 if drill_mode=='止まり穴' else 1.2}\n"
-            f"     = {peck}",
-            height=260
+            f"     = {peck}"
+
         )
 
-        st.subheader("RPM変更 → F再計算")
+        st.session_state.drill_rpm = rpm
 
-        new_rpm = st.number_input(
-            "変更後RPM",
-            value=int(rpm),
-            key="drill_rpm"
-        )
+    # ------------------------
+    # 結果表示
+    # ------------------------
 
-        new_feed = round(new_rpm * 0.15)
+    st.text_area(
+        "結果",
+        value=st.session_state.drill_result,
+        height=160
+    )
 
-        st.info(
-            f"S{new_rpm} → F{new_feed}"
-        )
+    st.text_area(
+        "計算根拠",
+        value=st.session_state.drill_detail,
+        height=260
+    )
+
+    # ------------------------
+    # RPM変更
+    # ------------------------
+
+    if "drill_rpm" not in st.session_state:
+        st.session_state.drill_rpm = 1000
+
+    st.subheader("RPM変更 → F再計算")
+
+    new_rpm = st.number_input(
+        "変更後RPM",
+        value=int(st.session_state.drill_rpm),
+        key="drill_rpm_change"
+    )
+
+    new_feed = round(new_rpm * 0.15)
+
+    st.info(
+        f"S{new_rpm} → F{new_feed}"
+    )
 
 # =========================================================
 # エンドミル
